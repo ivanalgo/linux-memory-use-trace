@@ -391,6 +391,10 @@ struct module {
 	unsigned int num_exentries;
 	struct exception_table_entry *extable;
 
+	/* Memory Usage table */
+	unsigned int mm_usage_num;
+	mm_usage_t *mm_usage_table;
+
 	/* Startup function. */
 	int (*init)(void);
 

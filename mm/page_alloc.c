@@ -3275,7 +3275,7 @@ EXPORT_SYMBOL(__alloc_pages_nodemask);
 /*
  * Common helper functions.
  */
-unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
+unsigned long __real_get_free_pages(gfp_t gfp_mask, unsigned int order)
 {
 	struct page *page;
 
@@ -3290,15 +3290,15 @@ unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
 		return 0;
 	return (unsigned long) page_address(page);
 }
-EXPORT_SYMBOL(__get_free_pages);
+EXPORT_SYMBOL(__real_get_free_pages);
 
-unsigned long get_zeroed_page(gfp_t gfp_mask)
+unsigned long real_get_zeroed_page(gfp_t gfp_mask)
 {
 	return __get_free_pages(gfp_mask | __GFP_ZERO, 0);
 }
-EXPORT_SYMBOL(get_zeroed_page);
+EXPORT_SYMBOL(real_get_zeroed_page);
 
-void __free_pages(struct page *page, unsigned int order)
+void __real_free_pages(struct page *page, unsigned int order)
 {
 	if (put_page_testzero(page)) {
 		if (order == 0)
@@ -3308,9 +3308,9 @@ void __free_pages(struct page *page, unsigned int order)
 	}
 }
 
-EXPORT_SYMBOL(__free_pages);
+EXPORT_SYMBOL(__real_free_pages);
 
-void free_pages(unsigned long addr, unsigned int order)
+void real_free_pages(unsigned long addr, unsigned int order)
 {
 	if (addr != 0) {
 		VM_BUG_ON(!virt_addr_valid((void *)addr));
@@ -3318,7 +3318,7 @@ void free_pages(unsigned long addr, unsigned int order)
 	}
 }
 
-EXPORT_SYMBOL(free_pages);
+EXPORT_SYMBOL(real_free_pages);
 
 /*
  * Page Fragment:

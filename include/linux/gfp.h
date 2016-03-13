@@ -6,6 +6,7 @@
 #include <linux/stddef.h>
 #include <linux/linkage.h>
 #include <linux/topology.h>
+#include <linux/mm_usage.h>
 
 struct vm_area_struct;
 
@@ -453,10 +454,16 @@ static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
 #ifdef CONFIG_NUMA
 extern struct page *alloc_pages_current(gfp_t gfp_mask, unsigned order);
 
-static inline struct page *
+static __always_inline struct page *
 alloc_pages(gfp_t gfp_mask, unsigned int order)
 {
-	return alloc_pages_current(gfp_mask, order);
+	struct page *page;
+
+	page = alloc_pages_current(gfp_mask, order);
+	if (page)
+		mm_usage_inc(page, order);
+
+	return page;
 }
 extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
 			struct vm_area_struct *vma, unsigned long addr,
@@ -464,8 +471,18 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
 #define alloc_hugepage_vma(gfp_mask, vma, addr, order)	\
 	alloc_pages_vma(gfp_mask, order, vma, addr, numa_node_id(), true)
 #else
-#define alloc_pages(gfp_mask, order) \
-		alloc_pages_node(numa_node_id(), gfp_mask, order)
+static __always_inline struct page *
+alloc_pages(gfp_t gfp_mask, unsigned int order)
+{
+	struct page *page;
+
+	page = alloc_pages_node(numa_node_id(), gfp_mask, order);
+	if (page)
+		mm_usage_inc(page, order);
+
+	return page;
+}
+
 #define alloc_pages_vma(gfp_mask, order, vma, addr, node, false)\
 	alloc_pages(gfp_mask, order)
 #define alloc_hugepage_vma(gfp_mask, vma, addr, order)	\
@@ -481,8 +498,38 @@ extern struct page *alloc_kmem_pages(gfp_t gfp_mask, unsigned int order);
 extern struct page *alloc_kmem_pages_node(int nid, gfp_t gfp_mask,
 					  unsigned int order);
 
-extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
-extern unsigned long get_zeroed_page(gfp_t gfp_mask);
+extern unsigned long __real_get_free_pages(gfp_t gfp_mask, unsigned int order);
+extern unsigned long real_get_zeroed_page(gfp_t gfp_mask);
+
+static __always_inline unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
+{
+	unsigned long addr;
+	struct page *page;
+
+	addr = __real_get_free_pages(gfp_mask, order);
+	if (!addr)
+		return addr;
+
+	page = virt_to_page(addr);
+	mm_usage_inc(page, order);
+
+	return addr;
+}
+
+static __always_inline unsigned long get_zeroed_page(gfp_t gfp_mask)
+{
+	unsigned long addr;
+	struct page *page;
+
+	addr = real_get_zeroed_page(gfp_mask);
+	if (!addr)
+		return addr;
+
+	page = virt_to_page(addr);
+	mm_usage_inc(page, 1);
+
+	return addr;
+}
 
 void *alloc_pages_exact(size_t size, gfp_t gfp_mask);
 void free_pages_exact(void *virt, size_t size);
@@ -494,8 +541,27 @@ void * __meminit alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
 #define __get_dma_pages(gfp_mask, order) \
 		__get_free_pages((gfp_mask) | GFP_DMA, (order))
 
-extern void __free_pages(struct page *page, unsigned int order);
-extern void free_pages(unsigned long addr, unsigned int order);
+extern void __real_free_pages(struct page *page, unsigned int order);
+extern void real_free_pages(unsigned long addr, unsigned int order);
+
+static __always_inline void __free_pages(struct page *page, unsigned int order)
+{
+	mm_usage_dec(page, order);
+	__real_free_pages(page, order);
+}
+
+static __always_inline void free_pages(unsigned long addr, unsigned int order)
+{
+	struct page *page;
+
+	if (!addr)
+		return;
+
+	page = virt_to_page(addr);
+	mm_usage_dec(page, order);
+	real_free_pages(addr, order);	
+}
+
 extern void free_hot_cold_page(struct page *page, bool cold);
 extern void free_hot_cold_page_list(struct list_head *list, bool cold);
 

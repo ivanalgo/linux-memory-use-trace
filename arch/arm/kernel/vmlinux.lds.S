@@ -131,6 +131,8 @@ SECTIONS
 		__stop___ex_table = .;
 	}
 
+	MM_USAGE_TABLE(4)
+
 #ifdef CONFIG_ARM_UNWIND
 	/*
 	 * Stack unwinding tables

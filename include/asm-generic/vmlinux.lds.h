@@ -28,6 +28,7 @@
  *	_edata = .;
  *
  *	EXCEPTION_TABLE(...)
+ *	MM_USAGE_TABLE(...)
  *	NOTES
  *
  *	BSS_SECTION(0, 0, 0)
@@ -483,6 +484,17 @@
 		VMLINUX_SYMBOL(__start___ex_table) = .;			\
 		*(__ex_table)						\
 		VMLINUX_SYMBOL(__stop___ex_table) = .;			\
+	}
+
+/*
+ * Memory Usage table
+ */
+#define MM_USAGE_TABLE(align)						\
+	. = ALIGN(align);						\
+	__mm_usage : AT(ADDR(__mm_usage) - LOAD_OFFSET) {		\
+		VMLINUX_SYMBOL(__start_mm_usage) = .;			\
+		*(__mm_usage)						\
+		VMLINUX_SYMBOL(__stop_mm_usage) = .;			\
 	}
 
 /*
