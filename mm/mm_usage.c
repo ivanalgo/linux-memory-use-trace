@@ -3,6 +3,7 @@
 #include <linux/seq_file.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
+#include <linux/module.h>
 
 extern mm_usage_t __start_mm_usage[];
 extern mm_usage_t __stop_mm_usage[];
