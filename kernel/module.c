@@ -2959,22 +2959,6 @@ static int find_module_sections(struct module *mod, struct load_info *info)
 	mod->mm_usage_table = section_objs(info, "__mm_usage",
 				    sizeof(*mod->mm_usage_table),
 				    &mod->mm_usage_num);	
-	if (mod->mm_usage_num) {
-		int i;
-		mm_usage_t *module_ptr;
-		for (i = 0; i < mod->mm_usage_num; i++) {
-			module_ptr = kmalloc(sizeof(mm_usage_t), GFP_KERNEL | __GFP_ZERO);
-			if (!module_ptr)
-				return -ENOMEM;
-
-			*module_ptr = mod->mm_usage_table[i];
-			mod->mm_usage_table[i].module_ptr = module_ptr;
-		}
-
-		for (i = 0; i < mod->mm_usage_num; i++) {
-			mm_usage_list_add(mod->mm_usage_table[i].module_ptr);
-		}
-	}
 
 	if (section_addr(info, "__obsparm"))
 		pr_warn("%s: Ignoring obsolete parameters\n", mod->name);
@@ -3176,6 +3160,7 @@ static int post_relocation(struct module *mod, const struct load_info *info)
 	/* Sort exception table now relocations are done. */
 	sort_extable(mod->extable, mod->extable + mod->num_exentries);
 
+	alloc_module_mm_usage(mod->mm_usage_table, mod->mm_usage_num);
 	/* Copy relocated percpu area over. */
 	percpu_modcopy(mod, (void *)info->sechdrs[info->index.pcpu].sh_addr,
 		       info->sechdrs[info->index.pcpu].sh_size);

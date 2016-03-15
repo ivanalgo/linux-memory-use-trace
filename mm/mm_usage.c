@@ -4,6 +4,7 @@
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/module.h>
+#include <linux/slab.h>
 
 extern mm_usage_t __start_mm_usage[];
 extern mm_usage_t __stop_mm_usage[];
@@ -16,7 +17,7 @@ DEFINE_MUTEX(mm_usage_mutex);
 void mm_usage_list_add(mm_usage_t *mm_usage)
 {
 	mutex_lock(&mm_usage_mutex);
-	list_add(&(mm_usage->list), &module_mm_usage_list);
+	list_add_tail(&(mm_usage->list), &module_mm_usage_list);
 	mutex_unlock(&mm_usage_mutex);
 }
 
@@ -25,6 +26,24 @@ void mm_usage_list_del(mm_usage_t *mm_usage)
 	mutex_lock(&mm_usage_mutex);
 	list_del(&(mm_usage->list));
 	mutex_unlock(&mm_usage_mutex);
+}
+
+int alloc_module_mm_usage(mm_usage_t *table, int num)
+{
+	int i;
+	mm_usage_t *module_ptr;
+
+	for (i = 0; i < num; i++) {
+		module_ptr = kmalloc(sizeof(mm_usage_t), GFP_KERNEL | __GFP_ZERO);
+		if (!module_ptr)
+			return -ENOMEM;
+
+		*module_ptr = table[i];
+		table[i].module_ptr = module_ptr;
+		mm_usage_list_add(module_ptr);
+	}
+
+	return 0;
 }
 
 static void *s_start(struct seq_file *f, loff_t *pos)

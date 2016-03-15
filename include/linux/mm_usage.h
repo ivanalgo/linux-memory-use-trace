@@ -47,5 +47,6 @@ static inline void mm_usage_dec(struct page *page, int order)
 
 extern void mm_usage_list_add(mm_usage_t *mm_usage);
 extern void mm_usage_list_del(mm_usage_t *mm_usage);
+extern int alloc_module_mm_usage(mm_usage_t *mm_usage_table, int num);
 
 #endif /* MM_USAGE_H */
