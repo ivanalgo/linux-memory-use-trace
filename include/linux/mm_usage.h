@@ -22,7 +22,7 @@ static mm_usage_t mm_usage __attribute__((section("__mm_usage"))) = {
 	.size = 0,
 };
 
-#ifdef MODULES
+#ifdef MODULE 
 #define THIS_MM_USAGE (mm_usage.module_ptr)
 #else
 #define THIS_MM_USAGE (&mm_usage)
